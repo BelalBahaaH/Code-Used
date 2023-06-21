@@ -1,1 +1,134 @@
+import numpy as np
+from scipy.integrate import solve_ivp
+import matplotlib.pyplot as plt
 
+
+#Inital Conditions
+y0 = [-1     ,#x1
+  0             ,#y1
+  1            ,#x2
+  0             ,#y2
+  0               ,#x3
+  0             ,#y3
+  0.347111    ,#vx1
+  0.108150       ,#vy1
+  0.347111       ,#vx2
+  0.108150       ,#vy2
+  -2 * 0.347111  ,#vx3
+  -2 * 0.108150   #vy3 
+ ]      
+
+# The masses of the 3 bodies
+m1 = 1
+m2 = 1
+m3 = 1
+
+# Time steps
+N = 6600
+T = 0.001 
+
+#Definition of the Function 
+def ThreeBody(t,y, m1, m2, m3):
+   f = np.zeros(12)
+            
+  # The velocities of the three bodies
+   f[0] = y[6]
+   f[1] = y[7]
+   f[2] = y[8]
+   f[3] = y[9]
+   f[4] = y[10]
+   f[5] = y[11]
+
+  # The x and y accelerations of each object respectively
+   f[6] = -m2*(y[0]-y[2])/(((y[0]-y[2])**2+(y[1]-y[3])**2)**(3/2)) \
+        - m3*(y[0]-y[4])/(((y[0]-y[4])**2+(y[1]-y[5])**2)**(3/2))
+        
+   f[7] = -m2*(y[1]-y[3])/(((y[0]-y[2])**2+(y[1]-y[3])**2)**(3/2)) \
+        -m3*(y[1]-y[5])/(((y[0]-y[4])**2+(y[1]-y[5])**2)**(3/2))
+                  
+   f[8] = -m1*(y[2]-y[0])/(((y[2]-y[0])**2+(y[3]-y[1])**2)**(3/2)) \
+        -m3*(y[2]-y[4])/(((y[2]-y[4])**2+(y[3]-y[5])**2)**(3/2))
+        
+   f[9] = -m1*(y[3]-y[1])/(((y[2]-y[0])**2+(y[3]-y[1])**2)**(3/2)) \
+        -m3*(y[3]-y[5])/(((y[2]-y[4])**2+(y[3]-y[5])**2)**(3/2))
+                  
+   f[10]= -m1*(y[4]-y[0])/(((y[4]-y[0])**2+(y[5]-y[1])**2)**(3/2)) \
+        -m2*(y[4]-y[2])/(((y[4]-y[2])**2+(y[5]-y[3])**2)**(3/2))
+        
+   f[11]= -m1*(y[5]-y[1])/(((y[4]-y[0])**2+(y[5]-y[1])**2)**(3/2)) \
+        -m2*(y[5]-y[3])/(((y[4]-y[2])**2+(y[5]-y[3])**2)**(3/2))
+        
+   return f  
+
+
+#Solving for the positions of all bodies
+t = np.linspace(0,N*T,N)
+solution = solve_ivp(ThreeBody,[0,670],y0,t_eval=t,rtol=1e-12, args = (m1, m2, m3))
+
+# Defining lists to contain the angular momenta (L), total kinetic energy (KET), 
+# total potential energy (PET), and the total energy of the system (Energy).
+L1 = []
+L2 = []
+L3=  []
+LT = []
+KET = []
+PET = []
+Energy = []
+
+# Calculating the angular momentum and Energy of the system
+for i in range(N):
+    # Calculating the angular momentum of the system
+    L1.append((solution.y[0][i] * solution.y[7][i])-(solution.y[1][i] * solution.y[6][i]))
+    L2.append((solution.y[2][i] * solution.y[9][i])-(solution.y[3][i] * solution.y[8][i]))
+    L3.append((solution.y[4][i] * solution.y[11][i])-(solution.y[5][i] * solution.y[10][i]))
+    LT.append(L1[i] + L2[i] + L3[i])
+    
+    # Calculating the kinetic energy of the system
+    v1 = (solution.y[6][i])**2 + (solution.y[7][i])**2
+    v2 = (solution.y[8][i])**2 + (solution.y[9][i])**2
+    v3 = (solution.y[10][i])**2 + (solution.y[11][i])**2
+    KET.append(0.5 * ( v1 +  v2 + v3))
+    
+    # Calculating the potenial energy of the system
+    r12 = np.sqrt((solution.y[2][i] - solution.y[0][i])**2 + (solution.y[3][i] - solution.y[1][i])**2)
+    r23 = np.sqrt((solution.y[2][i] - solution.y[4][i])**2 + (solution.y[3][i] - solution.y[5][i])**2)
+    r13 = np.sqrt((solution.y[0][i] - solution.y[4][i])**2 + (solution.y[1][i] - solution.y[5][i])**2)
+    PET.append((-1/r12) - (1/r23) - (1/r13))
+    
+    # Calculating the total energy of the system
+    Energy.append(KET[i] + PET[i])
+
+# Printing the mean energy and angular momentum of the system
+print(np.mean(Energy))
+print(np.mean(LT))
+
+# Calculating the period of the solution
+PeriodicTime = []
+for i in range(N):
+    e = 0.0003
+    if solution.y[0][0] - e <= solution.y[0][i] <= solution.y[0][0] + e \
+    and solution.y[1][0] - e <= solution.y[1][i] <= solution.y[1][0] + e:
+        PeriodicTime.append(i)
+print(PeriodicTime)
+
+
+#Evolution of Position with respect to Time
+plt.plot(solution.y[0],solution.y[1],'-g', label = 'Body 1') #Positions body 1
+plt.plot(solution.y[2],solution.y[3],'-r', label = 'Body 2') #Positions body 2
+plt.plot(solution.y[4],solution.y[5],'-b', label = 'Body 3')#Positions body 3
+plt.legend(loc='upper right')
+plt.ylabel("Position(y)")
+plt.xlabel("Position(x)")
+plt.show()
+
+# Plotting the angular momentum versus time
+plt.plot(t,LT)
+plt.ylabel("Angular Momentum")
+plt.xlabel("Time")
+plt.show()
+
+# Plotting the angular momentum versus time
+plt.plot(t, Energy)
+plt.ylabel("Total Energy")
+plt.xlabel("Time")
+plt.show()
