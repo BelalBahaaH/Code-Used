@@ -1,1 +1,129 @@
+import numpy as np
+from scipy.integrate import solve_ivp
+import matplotlib.pyplot as plt
 
+#Inital Conditions
+y0 = [-1        ,#x1
+  0             ,#y1
+  1            ,#x2
+  0             ,#y2
+  0               ,#x3
+  0             , #y3
+  0             , #x4
+  0.5            , #y4
+  0.347111    ,#vx1
+  0.532728      ,#vy1
+  0.347111       ,#vx2
+  0.532728      ,#vy2
+  -2 * 0.347111  ,#vx3
+  -2 * 0.532728  , #vy3
+  0              , #vx4
+  0            , #vy4
+ ]      
+
+# The masses of the 4 bodies
+m1 = 1
+m2 = 1
+m3 = 1
+m4 = 0.01400
+
+# Time steps and the total number of steps
+N = 670000
+T = 0.001 
+
+#Definition of the Function 
+def ThreeBody(t,y, m1, m2, m3, m4):
+   f = np.zeros(16)
+            
+  # The velocities of the three bodies
+   f[0] = y[8]
+   f[1] = y[9]
+   f[2] = y[10]
+   f[3] = y[11]
+   f[4] = y[12]
+   f[5] = y[13]
+   f[6] = y[14]
+   f[7] = y[15]
+
+  # The x and y accelerations of each object respectively
+   f[8] = -m2*(y[0]-y[2])/(((y[0]-y[2])**2+(y[1]-y[3])**2)**(3/2)) \
+        - m3*(y[0]-y[4])/(((y[0]-y[4])**2+(y[1]-y[5])**2)**(3/2)) \
+        - m4*(y[0]-y[6])/(((y[0]-y[6])**2+(y[1]-y[7])**2)**(3/2))
+        
+   f[9] = -m2*(y[1]-y[3])/(((y[0]-y[2])**2+(y[1]-y[3])**2)**(3/2)) \
+        -m3*(y[1]-y[5])/(((y[0]-y[4])**2+(y[1]-y[5])**2)**(3/2)) \
+        - m4*(y[1]-y[7])/(((y[0]-y[6])**2+(y[1]-y[7])**2)**(3/2))
+                  
+   f[10] = -m1*(y[2]-y[0])/(((y[2]-y[0])**2+(y[3]-y[1])**2)**(3/2)) \
+           -m3*(y[2]-y[4])/(((y[2]-y[4])**2+(y[3]-y[5])**2)**(3/2)) \
+           -m4*(y[2]-y[6])/(((y[2]-y[6])**2+(y[3]-y[7])**2)**(3/2))
+        
+   f[11] = -m1*(y[3]-y[1])/(((y[2]-y[0])**2+(y[3]-y[1])**2)**(3/2)) \
+        -m3*(y[3]-y[5])/(((y[2]-y[4])**2+(y[3]-y[5])**2)**(3/2)) \
+        -m4*(y[3]-y[7])/(((y[2]-y[6])**2+(y[3]-y[7])**2)**(3/2))
+                  
+   f[12]= -m1*(y[4]-y[0])/(((y[4]-y[0])**2+(y[5]-y[1])**2)**(3/2)) \
+        -m2*(y[4]-y[2])/(((y[4]-y[2])**2+(y[5]-y[3])**2)**(3/2)) \
+        -m4*(y[4]-y[6])/(((y[4]-y[6])**2+(y[5]-y[7])**2)**(3/2))
+        
+   f[13]= -m1*(y[5]-y[1])/(((y[4]-y[0])**2+(y[5]-y[1])**2)**(3/2)) \
+        -m2*(y[5]-y[3])/(((y[4]-y[2])**2+(y[5]-y[3])**2)**(3/2))  \
+        -m4*(y[5]-y[7])/(((y[4]-y[6])**2+(y[5]-y[7])**2)**(3/2))
+   
+   f[14] = -m1*(y[6]-y[0])/(((y[6]-y[0])**2+(y[7]-y[1])**2)**(3/2)) \
+        -m2*(y[6]-y[2])/(((y[6]-y[2])**2+(y[7]-y[3])**2)**(3/2))  \
+        -m3*(y[6]-y[4])/(((y[6]-y[4])**2+(y[7]-y[5])**2)**(3/2))
+
+   f[15] = -m1*(y[7]-y[1])/(((y[6]-y[0])**2+(y[7]-y[1])**2)**(3/2)) \
+        -m2*(y[7]-y[3])/(((y[6]-y[2])**2+(y[7]-y[3])**2)**(3/2))  \
+        -m3*(y[7]-y[5])/(((y[6]-y[4])**2+(y[7]-y[5])**2)**(3/2))
+        
+   return f 
+
+
+#Solving for the positions of all bodies
+t = np.linspace(0,N*T,N)
+solution = solve_ivp(ThreeBody,[0,670],y0,t_eval=t,rtol=1e-12, args = (m1, m2, m3, m4))
+
+
+# Defining lists to contain the angular momenta (L)
+L1 = []
+L2 = []
+L3=  []
+L4 = []
+LT = []
+
+# Calculating the angular momentum of the system
+for i in range(N):
+    L1.append((solution.y[0][i] * m1 * solution.y[9][i])-(solution.y[1][i] * m1 * solution.y[8][i]))
+    L2.append((solution.y[2][i] * m2 * solution.y[11][i])-(solution.y[3][i] * m2 * solution.y[10][i]))
+    L3.append((solution.y[4][i] * m3 * solution.y[13][i])-(solution.y[5][i] * m3 * solution.y[12][i]))
+    L4.append((solution.y[6][i] * m4 * solution.y[15][i])-(solution.y[7][i] * m4 * solution.y[14][i]))
+    LT.append(L1[i] + L2[i] + L3[i] + L4[i])
+
+# Calculating the period of the solution
+PeriodicTime = []
+for i in range(N):
+    e = 0.0003
+    if solution.y[0][0] - e <= solution.y[0][i] <= solution.y[0][0] + e \
+    and solution.y[1][0] - e <= solution.y[1][i] <= solution.y[1][0] + e:
+        PeriodicTime.append(i)
+print(PeriodicTime)
+
+#Evolution in Position with respect to Time
+plt.plot(solution.y[0],solution.y[1],'-g', label = "Body 1") #Positions body 1
+plt.plot(solution.y[2],solution.y[3],'-r', label = "Body 2") #Positions body 2
+plt.plot(solution.y[4],solution.y[5],'-b', label = "Body 3") #Positions body 3
+plt.plot(solution.y[6],solution.y[7],'-y', label = "Body 4") #Positions body 4
+plt.legend()
+plt.xlim(-15, 15)
+plt.ylim(-15, 15)
+plt.ylabel("Position(y)")
+plt.xlabel("Position(x)")
+plt.show()
+
+
+plt.plot(t,LT)
+plt.ylabel("Angular Momentum")
+plt.xlabel("Time")
+plt.show()
