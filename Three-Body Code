@@ -127,7 +127,7 @@ plt.ylabel("Angular Momentum")
 plt.xlabel("Time")
 plt.show()
 
-# Plotting the angular momentum versus time
+# Plotting total energy versus time
 plt.plot(t, Energy)
 plt.ylabel("Total Energy")
 plt.xlabel("Time")
